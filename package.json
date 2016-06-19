@@ -1,0 +1,16 @@
+{
+  "name": "faceRecognition",
+  "version": "0.0.0",
+  "description": "Testing FaceAPI for face recognition",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test":"nodemon index.js"
+  },
+  "author": "Laged",
+  "license": "BSD-2-Clause",
+  "dependencies": {
+    "express": "^4.14.0",
+    "nodemon": "^1.9.2"
+  }
+}
