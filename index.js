@@ -7,24 +7,39 @@ const watcher = chokidar.watch('images/');
 const faceAPI = require('./face.js');
 
 function identifyPerson(path) {
-	console.log(path + ' changed');
-	faceAPI.detect(path)
-	.then( faceID => {
-		console.log('got faceID: ' + faceID);
-		faceAPI.identify(faceID)
-		.then( personID => {
-			console.log('got personID: ' + personID)
-			faceAPI.getName(personID)
-			.then( name => {
-				console.log('got name: ' + name);
-				return name;
+	faceAPI.debug(path + ' changed');
+	return new Promise( (resolve, reject) => {
+		faceAPI.detect(path)
+		.then( faceID => {
+			faceAPI.debug('got faceID: ' + faceID);
+			faceAPI.identify(faceID)
+			.then( personID => {
+				faceAPI.debug('got personID: ' + personID);
+				faceAPI.getName(personID)
+				.then( name => {
+					faceAPI.debug('got name: ' + name);
+					resolve(name);
+				})
 			})
 		})
+		.catch( (e) => {
+			console.log(e);
+		});
 	});
 }
 
+function greet(name) {
+	console.log('Hello, ' + name);
+}
+
 watcher.on('change', path => {
-	const name = identifyPerson(path);
+	setTimeout( () => {
+		identifyPerson(path)
+		.then( name => {
+			faceAPI.debug('identified: ' + name);
+			greet(name);
+		});
+	}, 1000);
 });
 
 
@@ -33,4 +48,4 @@ app.get('/', function(req, res){
 });
 
 app.listen(process.env.PORT | 3000);
-console.log('Running on ', port);
+faceAPI.debug('Running on ' + port);

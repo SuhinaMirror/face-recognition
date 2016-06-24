@@ -1,42 +1,67 @@
 const request = require("request");
 const fs = require('fs');
+const moment = require('moment');
 
 const apiURL = 'https://api.projectoxford.ai/face/v1.0/';
 const faceKey = process.env.FACEKEY;
 const personGroupId = 'suhina';
+const requiredConfidence = 0.6;
 
-console.log("face.js using FaceAPI key: " + faceKey);
+const timeFormat = 'HH:mm:ss'
+const showDebug = false;
+
+function timestamp() {
+	return '[' + moment().format(timeFormat) + '] ';
+}
+
+function debug(message) {
+	if (showDebug) {
+		console.log(timestamp() + message);
+	}
+}
+
+debug("face.js using FaceAPI key: " + faceKey);
 
 module.exports = {
-	detect: (imagePath) => { //.jpg => faceID
+	debug: (message) => {
+		debug(message);
+	},
+	//Converts an image to a faceID
+	detect: (imagePath) => {
+		debug('detect: ' + imagePath);
 		return new Promise( (resolve, reject) => {
-			const image = fs.readFileSync(__dirname + '/'+ imagePath);
-			const options = {
-				method: 'POST',
-				url: apiURL + 'detect',
-				qs: {
-					returnFaceId: 'true',
-					returnFaceLandmarks: 'false'
-				},
-				headers: {
-					'ocp-apim-subscription-key': faceKey,
-					'content-type': 'application/octet-stream'
-				},
-				json: false,
-				body: image
-			};
+			const image = fs.readFile(imagePath, null, (error, data) => {
+				if (error) throw error;
+				const options = {
+					method: 'POST',
+					url: apiURL + 'detect?returnFaceId=true',
+					headers: {
+						'ocp-apim-subscription-key': faceKey,
+						'content-type': 'application/octet-stream'
+					},
+					body: data
+				};
 
-			request(options, function (error, response, body) {
-				if (error) throw new Error(error);
-				//TODO: FIX THIS TO RETURN THE RIGHT FACEID
-				console.log(response.statusCode);
-				console.log(body);
-				const tempResult = '2c47869d-47c3-404a-a02e-cc6e88d7d881';
-				resolve(tempResult);
+				debug('\trequesting ' + options.url);
+				request(options, function (error, response, body) {
+					if (error) throw new Error(error);
+					debug('\t' + body);
+					const faceData = JSON.parse(body)[0];
+					if(faceData) {
+						debug('resolve');
+						resolve(faceData['faceId']);
+					} else {
+						debug('reject');
+						reject('No face detected.');
+					}
+				});
 			});
+			debug('done');
 		});
 	},
-	identify: (faceID) => { //faceID => personID
+	//Converts a faceID to a personID
+	identify: (faceID) => {
+		debug('identify: ' + faceID);
 		return new Promise( (resolve, reject) => {
 			const options = {
 				method: 'POST',
@@ -50,30 +75,43 @@ module.exports = {
 							'faceIds':[faceID],
 							"maxNumOfCandidatesReturned":1
 				},
-				json: true
+				json:true
 			};
 
+			debug('\trequesting ' + options.url);
 			request(options, function (error, response, body) {
 				if (error) throw new Error(error);
-				if(response.statusCode === 200 && body) {
-						if(body.length) {
-							const candidates = body[0].candidates;
+				debug('\t' + JSON.stringify(body));
+				const result = body;
+				if(response.statusCode === 200 && result) {
+						if(result.length) {
+							const candidates = result[0].candidates;
 							if(candidates.length) {
 								const bestMatch = candidates[0];
-								if(bestMatch.confidence > 0.75) {
+								if(bestMatch.confidence > requiredConfidence) {
+									debug('resolve');
 									resolve(bestMatch.personId);
 								} else {
-									reject('NoIdentify:()');
+									debug('reject');
+									reject('Confidence not high enough');
 								};
+							} else {
+								reject('Candidate not identified');
 							};
+						} else {
+							reject('No candidates found')
 						};
+				} else {
+					reject('Invalid identify request')
 				};
 			});
+			debug('done');
 		});
 	},
-	getName: (personID) => { //personID => name
+	//Converts a personID to a name
+	getName: (personID) => {
+		debug('getName: ' + personID);
 		return new Promise( (resolve, reject) => {
-			console.log('getName: ' + personID);
 			const options = {
 				method: 'GET',
 				url: apiURL + 'persongroups/' + personGroupId + '/persons',
@@ -81,21 +119,29 @@ module.exports = {
 					'ocp-apim-subscription-key': faceKey,
 					'content-type': 'application/json'
 				},
-				json: true
+				json:true
 			};
-
+			debug('\trequesting: ' + options.url);
 			request(options, function (error, response, body) {
 				if (error) throw new Error(error);
-				if(response.statusCode === 200 && body) {
-						if(body.length) {
-							const result = body.find( person => person.personId.match(new RegExp(personID, 'i')));
-							if(result) {
-								resolve(result.name);
+				debug('\t' + JSON.stringify(body));
+				const result = body;
+				if(response.statusCode === 200 && result) {
+						if(result.length) {
+							const person = result.find( person => person.personId.match(new RegExp(personID, 'i')));
+							if(person) {
+								debug(JSON.stringify(person));
+								resolve(person['name']);
 							} else {
-								reject('NoName:(');
+								reject('Person name not found.');
 							};
+						} else {
+							reject('Result not found')
 						};
+				} else {
+					reject('Invalid getName request');
 				};
+				debug('done');
 			});
 		});
 	}
