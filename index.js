@@ -1,10 +1,14 @@
+const exec = require('child_process').exec;
 const express = require('express');
-const app = express();
-const port = process.env.PORT | 3000;
-const chokidar = require('chokidar');
-const watcher = chokidar.watch('images/');
-
 const faceAPI = require('./face.js');
+const port = process.env.PORT | 3000;
+const app = express()
+	.get('/', (req, res) => {
+		res.sendFile(__dirname + '/example.html' )
+	})
+	.listen(process.env.PORT | 3000, () => faceAPI.debug('Running on ' + port));
+const WebSocketServer = require('ws').Server
+const wss = new WebSocketServer({server: app});
 
 function identifyPerson(path) {
 	faceAPI.debug(path + ' changed');
@@ -23,29 +27,38 @@ function identifyPerson(path) {
 			})
 		})
 		.catch( (e) => {
-			console.log(e);
+			faceAPI.debug(e);
 		});
 	});
 }
 
-function greet(name) {
-	console.log('Hello, ' + name);
+function detect() {
+	faceAPI.debug('new image requested');
+	return new Promise( (resolve, reject) => {
+		exec(__dirname + '/webcam.sh', () => {
+			setTimeout( () => {
+				identifyPerson('images/current.jpg')
+				.then( name => {
+					faceAPI.debug(name);
+					resolve(name);
+				});
+			}, 1000);
+		});
+	});
 }
 
-watcher.on('change', path => {
-	setTimeout( () => {
-		identifyPerson(path)
-		.then( name => {
-			faceAPI.debug('identified: ' + name);
-			greet(name);
-		});
-	}, 1000);
+wss.on('connection', (ws) => {
+	ws.on('message', (data, flags) => {
+		switch (data) {
+			case 'detect':
+				detect()
+				.then( name => {
+					ws.send(name);
+				});
+				break;
+			case 'hello':
+				ws.send('you');
+				break;
+		}
+	});
 });
-
-
-app.get('/', function(req, res){
-	res.send('Hello mirror');
-});
-
-app.listen(process.env.PORT | 3000);
-faceAPI.debug('Running on ' + port);

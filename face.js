@@ -1,6 +1,6 @@
-const request = require("request");
 const fs = require('fs');
 const moment = require('moment');
+const request = require("request");
 
 const apiURL = 'https://api.projectoxford.ai/face/v1.0/';
 const faceKey = process.env.FACEKEY;
@@ -8,7 +8,7 @@ const personGroupId = 'suhina';
 const requiredConfidence = 0.6;
 
 const timeFormat = 'HH:mm:ss'
-const showDebug = false;
+const showDebug = true;
 
 function timestamp() {
 	return '[' + moment().format(timeFormat) + '] ';

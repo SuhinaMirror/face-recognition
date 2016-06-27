@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>face-recognition</title>
+	<style>
+		* {
+			background-color: black;
+			color: white;
+		}
+	</style>
+</head>
+<body>
+	<h1>Hello, <span id='person'>?</span>.</h1>
+	<button id='detect'>Detect</button><span id='hint'></span>
+</body>
+<script>
+	var ws = new WebSocket('ws://localhost:3000');
+
+	ws.onopen = function() {
+		setTimeout(	function() {
+			ws.send('hello');
+		}, 1000);
+	};
+
+	document.getElementById('detect').addEventListener('click', function(event) {
+		ws.send('detect');
+	});
+
+	ws.onmessage = function(msg) {
+		console.log(msg.data);
+		document.getElementById('person').innerHTML = msg.data;;
+	};
+</script>
+</html>
