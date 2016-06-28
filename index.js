@@ -12,20 +12,19 @@ const wss = new WebSocketServer({server: app});
 
 function identifyPerson(path) {
 	faceAPI.debug(path + ' changed');
-	return new Promise( (resolve, reject) => {
-		faceAPI.detect(path)
+	return faceAPI.detect(path)
 		.then( faceID => {
 			faceAPI.debug('got faceID: ' + faceID);
-			faceAPI.identify(faceID)
-			.then( personID => {
-				faceAPI.debug('got personID: ' + personID);
-				faceAPI.getName(personID)
-				.then( name => {
-					faceAPI.debug('got name: ' + name);
-					resolve(name);
-				})
-			})
+			return faceAPI.identify(faceID);
 		})
+		.then( personID => {
+			faceAPI.debug('got personID: ' + personID);
+			return faceAPI.getName(personID);
+		})
+		.then( name => {
+				faceAPI.debug('got name: ' + name);
+					return name;
+		});
 		.catch( (e) => {
 			faceAPI.debug(e);
 		});

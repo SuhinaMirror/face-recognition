@@ -5,18 +5,12 @@ const request = require("request");
 const apiURL = 'https://api.projectoxford.ai/face/v1.0/';
 const faceKey = process.env.FACEKEY;
 const personGroupId = 'suhina';
-const requiredConfidence = 0.6;
-
-const timeFormat = 'HH:mm:ss'
+const requiredConfidence = 0.4;
 const showDebug = true;
-
-function timestamp() {
-	return '[' + moment().format(timeFormat) + '] ';
-}
 
 function debug(message) {
 	if (showDebug) {
-		console.log(timestamp() + message);
+		console.log(`[${moment().format('HH:mm:ss')}] ${message}`);
 	}
 }
 
@@ -27,7 +21,7 @@ module.exports = {
 		debug(message);
 	},
 	//Converts an image to a faceID
-	detect: (imagePath) => {
+	detect(imagePath) {
 		debug('detect: ' + imagePath);
 		return new Promise( (resolve, reject) => {
 			const image = fs.readFile(imagePath, null, (error, data) => {
@@ -60,7 +54,7 @@ module.exports = {
 		});
 	},
 	//Converts a faceID to a personID
-	identify: (faceID) => {
+	identify(faceID) {
 		debug('identify: ' + faceID);
 		return new Promise( (resolve, reject) => {
 			const options = {
@@ -109,7 +103,7 @@ module.exports = {
 		});
 	},
 	//Converts a personID to a name
-	getName: (personID) => {
+	getName(personID) {
 		debug('getName: ' + personID);
 		return new Promise( (resolve, reject) => {
 			const options = {
