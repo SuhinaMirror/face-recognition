@@ -24,11 +24,10 @@ function identifyPerson(path) {
 		.then( name => {
 				faceAPI.debug('got name: ' + name);
 					return name;
-		});
+		})
 		.catch( (e) => {
 			faceAPI.debug(e);
 		});
-	});
 }
 
 function detect() {
