@@ -12,16 +12,28 @@ const WebSocket = require('ws');
 const WebSocketServer = WebSocket.Server;
 const wss = new WebSocketServer({server: app});
 //const logic = new WebSocket('ws://192.168.10.40:8080/');
-
 //logic.on('open', () => faceAPI.debug('Connected to logic'));
 
 const spawn = require('child_process').spawn;
+
+let motionState = {status:'RUNNING',detected:''} //OR STANDBY
 const pyshell = spawn('python', [__dirname + '/motion.py']);
 pyshell.stdout.on('data', data => {
+	if (motionState.status === 'RUNNING') {
+		motionDetected();
+	}
+});
+
+function motionDetected() {
 	faceAPI.debug('motion detected');
 	detect()
 	.then( name => {
 		name = name || null;
+		if (name != null) {
+			setTimeout(standBy, 10000, name);
+		} else {
+			runMotion();
+		}
 		faceAPI.debug('sending ' + name);
 		//logic.send(JSON.stringify({
 		//	'method':'set',
@@ -30,8 +42,16 @@ pyshell.stdout.on('data', data => {
 		//}));
 		faceAPI.debug('sending done');
 	});
-});
+}
 
+function standBy(name) {
+	motionState = {status:'STANDBY', detected:name};
+	faceAPI.debug('standBy: ', motionState);
+};
+
+function runMotion() {
+	motionState = {status:'RUNNING', detected:''};
+}
 
 function identifyPerson(path) {
 	faceAPI.debug(path + ' changed');
