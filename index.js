@@ -11,9 +11,9 @@ const app = express()
 const WebSocket = require('ws');
 const WebSocketServer = WebSocket.Server;
 const wss = new WebSocketServer({server: app});
-const logic = new WebSocket('ws://192.168.10.40:8080/');
+//const logic = new WebSocket('ws://192.168.10.40:8080/');
 
-logic.on('open', () => faceAPI.debug('Connected to logic'));
+//logic.on('open', () => faceAPI.debug('Connected to logic'));
 
 const spawn = require('child_process').spawn;
 const pyshell = spawn('python', [__dirname + '/motion.py']);
@@ -23,11 +23,11 @@ pyshell.stdout.on('data', data => {
 	.then( name => {
 		name = name || null;
 		faceAPI.debug('sending ' + name);
-		logic.send(JSON.stringify({
-			'method':'set',
-			'key': 'active_user',
-			'value':name
-		}));
+		//logic.send(JSON.stringify({
+		//	'method':'set',
+		//	'key': 'active_user',
+		//	'value':name
+		//}));
 		faceAPI.debug('sending done');
 	});
 });
